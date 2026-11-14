@@ -64,9 +64,13 @@ function initChat(document, browser) {
   const form = document.querySelector("#chat-form");
   const input = document.querySelector("#message");
   const send = document.querySelector("#send");
+  const sound = document.querySelector("#sound");
+  const replayTemplate = document.querySelector("#replay-template");
+  const voice = typeof createMurlocVoice === "function" ? createMurlocVoice(browser, sound) : null;
+  if (!voice) sound.hidden = true;
   let pending = false;
 
-  function appendMessage(author, message) {
+  function appendMessage(author, message, seed) {
     const row = document.createElement("div");
     row.className = author === "You" ? "message user" : "message";
     const label = document.createElement("strong");
@@ -74,17 +78,24 @@ function initChat(document, browser) {
     const body = document.createElement("p");
     body.textContent = message;
     row.append(label, body);
+    if (voice && seed !== undefined) {
+      const replay = replayTemplate.content.firstElementChild.cloneNode(true);
+      replay.addEventListener("click", () => voice.replay(message, seed));
+      row.append(replay);
+    }
     history.append(row);
     history.scrollTop = history.scrollHeight;
   }
 
-  appendMessage("MurlocGPT", "Mrglglgl!");
+  appendMessage("MurlocGPT", "Mrglglgl!", 1);
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const message = input.value.trim();
     if (!message || pending) return;
     const reply = murlocReply();
+    const seed = Math.floor(Math.random() * 0x100000000);
+    voice?.prepare();
     pending = true;
     appendMessage("You", message);
     input.value = "";
@@ -94,7 +105,8 @@ function initChat(document, browser) {
 
     browser.setTimeout(() => {
       status.textContent = "";
-      appendMessage("MurlocGPT", reply);
+      appendMessage("MurlocGPT", reply, seed);
+      voice?.autoplay(reply, seed);
       pending = false;
       send.removeAttribute("aria-disabled");
     }, thinkingDelay(reply));
