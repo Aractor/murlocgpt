@@ -25,6 +25,11 @@ function murlocReply(random = Math.random) {
   return sentences.join(" ");
 }
 
+function thinkingDelay(reply, random = Math.random) {
+  const wordCount = reply.split(" ").length;
+  return 550 + wordCount * 75 + randomInt(0, 180, random);
+}
+
 function initChat(document, browser) {
   const theme = document.querySelector("#theme");
   const themeKey = "murlocgpt.theme";
@@ -79,19 +84,20 @@ function initChat(document, browser) {
     event.preventDefault();
     const message = input.value.trim();
     if (!message || pending) return;
+    const reply = murlocReply();
     pending = true;
     appendMessage("You", message);
     input.value = "";
-    status.textContent = "MurlockGPT is thinking...";
+    status.textContent = "MurlocGPT is thinking...";
     send.setAttribute("aria-disabled", "true");
     input.focus({ preventScroll: true });
 
     browser.setTimeout(() => {
       status.textContent = "";
-      appendMessage("MurlocGPT", murlocReply());
+      appendMessage("MurlocGPT", reply);
       pending = false;
       send.removeAttribute("aria-disabled");
-    }, randomInt(650, 1350, Math.random));
+    }, thinkingDelay(reply));
   });
 
   input.addEventListener("keydown", (event) => {
@@ -103,4 +109,4 @@ function initChat(document, browser) {
 }
 
 if (typeof document !== "undefined") initChat(document, window);
-if (typeof module !== "undefined") module.exports = { initChat, murlocReply };
+if (typeof module !== "undefined") module.exports = { initChat, murlocReply, thinkingDelay };
