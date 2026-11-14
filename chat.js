@@ -68,13 +68,26 @@ function initChat(document, browser) {
   const voice = typeof createMurlocVoice === "function" ? createMurlocVoice(browser) : null;
   let pending = false;
 
+  const viewport = browser.visualViewport;
+  if (viewport) {
+    const resizeChat = () => {
+      if (viewport.scale !== 1) return;
+      document.documentElement.style.setProperty("--visible-height", viewport.height + "px");
+      document.documentElement.classList.toggle("short-viewport", viewport.height <= 500);
+    };
+    viewport.addEventListener("resize", resizeChat);
+    resizeChat();
+  }
+
   function setPending(value) {
     pending = value;
-    input.disabled = value;
+    input.readOnly = value;
     send.disabled = value;
   }
 
   function appendMessage(author, message, seed) {
+    const followHistory = author === "You"
+      || history.scrollHeight - history.scrollTop - history.clientHeight < 48;
     const row = document.createElement("div");
     row.className = author === "You" ? "message user" : "message";
     const label = document.createElement("strong");
@@ -84,18 +97,28 @@ function initChat(document, browser) {
     row.append(label, body);
     if (voice && seed !== undefined) {
       const button = audioTemplate.content.firstElementChild.cloneNode(true);
-      const labels = { play: "Play", pause: "Pause", replay: "Replay" };
+      const labels = {
+        play: "Play Murloc audio",
+        pause: "Pause Murloc audio",
+        replay: "Replay Murloc audio",
+        loading: "Loading Murloc audio",
+        error: "Retry Murloc audio",
+      };
       const player = voice.createPlayer(message, seed, (state) => {
         button.dataset.state = state;
-        const label = labels[state] + " Murloc audio";
+        const label = labels[state];
+        button.setAttribute("aria-busy", String(state === "loading"));
+        button.setAttribute("aria-disabled", String(state === "loading"));
         button.setAttribute("aria-label", label);
         button.title = label;
       });
-      button.addEventListener("click", player.toggle);
+      button.addEventListener("click", () => {
+        if (button.dataset.state !== "loading") player.toggle();
+      });
       row.append(button);
     }
     history.append(row);
-    history.scrollTop = history.scrollHeight;
+    if (followHistory) history.scrollTop = history.scrollHeight;
   }
 
   appendMessage("MurlocGPT", "Mrglglgl!", 1);
