@@ -14,6 +14,8 @@ Run `node --test` with Node.js 20 or newer. To smoke-test in a browser, send a p
 
 ## GitHub Pages
 
-After merging, use the repository's **Settings → Pages** to deploy from the root of `main`. The site uses relative asset paths and needs no build step. The project URL will be `https://aractor.github.io/murlocgpt/` once Pages is enabled.
+[Open MurlocGPT on GitHub Pages](https://aractor.github.io/murlocgpt/).
+
+GitHub Pages publishes this site from the root of the `main` branch. Changes to `main` trigger a deployment. The site needs no build step.
 
 World of Warcraft and its Murlocs belong to Blizzard Entertainment.
