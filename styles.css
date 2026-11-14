@@ -163,10 +163,10 @@ h1 { margin: 0; font: 500 clamp(1.95rem, 6vw, 3.1rem)/1.1 "Instrument Serif", Ge
 #chat-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: .25rem;
+  gap: .875rem;
   border: 1px solid var(--edge);
   border-radius: 1.6rem;
-  padding: .55rem .65rem .55rem .85rem;
+  padding: .875rem;
   box-shadow: 0 .2rem .75rem #10291d14;
 }
 #chat-form:focus-within { border-color: var(--accent); }
@@ -186,12 +186,11 @@ textarea::placeholder { color: var(--muted); opacity: 1; }
 .composer-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: .65rem;
+  gap: .75rem;
 }
 #model {
   min-width: 0;
-  max-width: calc(100% - 3.5rem);
+  margin-right: auto;
   min-height: 2.75rem;
   border-color: transparent;
   border-radius: 999px;
@@ -225,10 +224,6 @@ button[aria-disabled="true"] { opacity: .65; cursor: default; }
 footer { padding-top: 1rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-.composer-toolbar #model {
-  margin-right: auto;
-  max-width: calc(100% - 6.8rem);
-}
 #sound, .replay {
   flex: none;
   border: 1px solid transparent;
