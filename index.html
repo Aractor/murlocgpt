@@ -6,8 +6,8 @@
   <meta name="description" content="A World of Warcraft-inspired chatbot that speaks fluent Murloc.">
   <title>MurlocGPT</title>
   <link rel="icon" href="./favicon.ico" sizes="16x16 32x32 48x48">
-  <link rel="stylesheet" href="./styles.css?v=9">
-  <script src="./voice.js?v=7" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=10">
+  <script src="./voice.js?v=8" defer></script>
   <script src="./chat.js?v=7" defer></script>
 </head>
 <body>
@@ -27,7 +27,10 @@
   <main>
     <section class="chat" aria-labelledby="title">
       <div class="intro">
-        <img class="portrait" src="./murloc-fish-portrait.jpg" width="100" height="100" alt="A smiling Murloc waves while holding a fish.">
+        <picture>
+          <source type="image/webp" srcset="./portrait-100.webp 100w, ./portrait-200.webp 200w, ./portrait-300.webp 300w" sizes="(max-height: 500px) 32px, (max-width: 600px) 48px, 100px">
+          <img class="portrait" src="./portrait-100.jpg" srcset="./portrait-100.jpg 100w, ./portrait-200.jpg 200w, ./murloc-fish-portrait.jpg 300w" sizes="(max-height: 500px) 32px, (max-width: 600px) 48px, 100px" width="100" height="100" alt="A smiling Murloc waves while holding a fish.">
+        </picture>
         <h1 id="title">Ask a Murloc.</h1>
         <p>Send a message and hear what it has to gurgle.</p>
       </div>

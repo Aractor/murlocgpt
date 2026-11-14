@@ -64,16 +64,13 @@ function renderMurloc(reply, seed, sampleRate, sampleData) {
   }
 
   const audio = new Float32Array(cursor);
-  function pcm(index) {
-    return ((sampleData.charCodeAt(index * 2) | sampleData.charCodeAt(index * 2 + 1) << 8) << 16 >> 16) / 32768;
-  }
   for (const segment of segments) {
     let source = 0;
     for (let i = 0; i < segment.frames; i++) {
       const frame = Math.floor(source);
       if (frame + 1 >= segment.length) break;
-      const left = pcm(segment.offset + frame);
-      const right = pcm(segment.offset + frame + 1);
+      const left = sampleData[segment.offset + frame];
+      const right = sampleData[segment.offset + frame + 1];
       const fade = Math.min(1, i / fadeFrames, (segment.frames - i - 1) / fadeFrames);
       audio[segment.cursor + i] += (left + (right - left) * (source - frame)) * segment.gain * fade;
       source += segment.step * (segment.rate + segment.inflection * i / segment.frames);
@@ -92,9 +89,8 @@ function createMurlocVoice(browser) {
   let samples;
   let loading;
 
-  function loadSamples() {
-    if (samples) return Promise.resolve(samples);
-    loading ??= new Promise((resolve, reject) => {
+  function loadLegacySamples() {
+    return new Promise((resolve, reject) => {
       const script = browser.document.createElement("script");
       script.src = "./voice-samples.js";
       script.onload = () => {
@@ -113,7 +109,21 @@ function createMurlocVoice(browser) {
         reject(new Error("Voice samples could not load"));
       };
       browser.document.head.append(script);
-    }).catch((error) => {
+    });
+  }
+
+  function loadSamples() {
+    if (samples) return Promise.resolve(samples);
+    loading ??= (browser.location.protocol === "file:" ? loadLegacySamples() : browser.fetch("./voice-bank.flac")
+      .then((response) => {
+        if (!response.ok) throw new Error("Voice samples could not load");
+        return response.arrayBuffer();
+      })
+      .then((data) => new browser.OfflineAudioContext(1, 1, 44100).decodeAudioData(data))
+      .then((buffer) => {
+        samples = buffer.getChannelData(0);
+        return samples;
+      }).catch(loadLegacySamples)).catch((error) => {
       loading = undefined;
       throw error;
     });
