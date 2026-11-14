@@ -64,17 +64,14 @@ function initChat(document, browser) {
   const form = document.querySelector("#chat-form");
   const input = document.querySelector("#message");
   const send = document.querySelector("#send");
-  const sound = document.querySelector("#sound");
-  const replayTemplate = document.querySelector("#replay-template");
-  const voice = typeof createMurlocVoice === "function" ? createMurlocVoice(browser, sound) : null;
-  if (!voice) sound.hidden = true;
+  const audioTemplate = document.querySelector("#audio-template");
+  const voice = typeof createMurlocVoice === "function" ? createMurlocVoice(browser) : null;
   let pending = false;
 
   function setPending(value) {
     pending = value;
     input.disabled = value;
     send.disabled = value;
-    for (const button of history.querySelectorAll(".replay")) button.disabled = value;
   }
 
   function appendMessage(author, message, seed) {
@@ -86,10 +83,17 @@ function initChat(document, browser) {
     body.textContent = message;
     row.append(label, body);
     if (voice && seed !== undefined) {
-      const replay = replayTemplate.content.firstElementChild.cloneNode(true);
-      replay.disabled = pending;
-      replay.addEventListener("click", () => voice.replay(message, seed));
-      row.append(replay);
+      const controls = audioTemplate.content.firstElementChild.cloneNode(true);
+      const button = controls.querySelector(".playback");
+      const player = voice.createPlayer(message, seed, (playing) => {
+        button.classList.toggle("is-playing", playing);
+        const label = playing ? "Pause Murloc audio" : "Play Murloc audio";
+        button.setAttribute("aria-label", label);
+        button.title = label;
+      });
+      button.addEventListener("click", player.toggle);
+      controls.querySelector(".replay").addEventListener("click", player.restart);
+      row.append(controls);
     }
     history.append(row);
     history.scrollTop = history.scrollHeight;
@@ -103,26 +107,18 @@ function initChat(document, browser) {
     if (!message || pending) return;
     const reply = murlocReply();
     const seed = Math.floor(Math.random() * 0x100000000);
-    voice?.prepare();
     const restoreFocus = [input, send].includes(document.activeElement);
     setPending(true);
     appendMessage("You", message);
     input.value = "";
     status.textContent = "MurlocGPT is thinking...";
 
-    browser.setTimeout(async () => {
-      status.textContent = "MurlocGPT is replying...";
+    browser.setTimeout(() => {
       appendMessage("MurlocGPT", reply, seed);
-      try {
-        await voice?.autoplay(reply, seed);
-      } catch {
-        // The visible reply remains available if audio playback fails.
-      } finally {
-        status.textContent = "";
-        setPending(false);
-        if (restoreFocus && document.activeElement === document.body) {
-          input.focus({ preventScroll: true });
-        }
+      status.textContent = "";
+      setPending(false);
+      if (restoreFocus && document.activeElement === document.body) {
+        input.focus({ preventScroll: true });
       }
     }, thinkingDelay(reply));
   });

@@ -82,115 +82,83 @@ function renderMurloc(reply, seed, sampleRate) {
   return audio;
 }
 
-function createMurlocVoice(browser, toggle) {
+function createMurlocVoice(browser) {
   if (!browser.AudioContext) return null;
 
-  const preference = "murlocgpt.sound";
-  let enabled = false;
   let context;
   let active;
-  let playbackId = 0;
-  try {
-    enabled = browser.localStorage.getItem(preference) === "on";
-  } catch {
-    // The toggle remains usable for this visit.
+  let requestId = 0;
+
+  function stop(keepPosition) {
+    if (!active) return;
+    const { player, source, startedAt } = active;
+    active = undefined;
+    player.position = keepPosition
+      ? Math.min(player.buffer.duration, player.position + context.currentTime - startedAt)
+      : 0;
+    player.update(false);
+    source.stop();
+    source.disconnect();
   }
 
-  function stop() {
-    playbackId++;
-    if (active) {
-      const { source, gain } = active;
-      active = undefined;
-      const now = context.currentTime;
-      gain.gain.setValueAtTime(gain.gain.value, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.015);
-      source.stop(now + 0.015);
-    }
-  }
-
-  function unlock() {
+  async function play(player) {
+    const requested = ++requestId;
     try {
       context ??= new browser.AudioContext();
-      return context.state === "running" ? Promise.resolve() : context.resume();
-    } catch (error) {
-      return Promise.reject(error);
-    }
-  }
+      if (context.state !== "running") await context.resume();
+      if (requested !== requestId || context.state !== "running") return;
 
-  function play(reply, seed) {
-    if (context?.state !== "running") return;
-    stop();
-    const samples = renderMurloc(reply, seed, 24000);
-    if (!samples.length) return;
+      stop(true);
+      if (!player.buffer) {
+        const samples = renderMurloc(player.reply, player.seed, 24000);
+        if (!samples.length) return;
+        player.buffer = context.createBuffer(1, samples.length, 24000);
+        player.buffer.copyToChannel(samples, 0);
+      }
 
-    const buffer = context.createBuffer(1, samples.length, 24000);
-    buffer.copyToChannel(samples, 0);
-    const source = context.createBufferSource();
-    const gain = context.createGain();
-    source.buffer = buffer;
-    source.connect(gain).connect(context.destination);
-    return new Promise((resolve, reject) => {
-      const clip = { source, gain };
-      active = clip;
-
-      function finish() {
-        context.removeEventListener("statechange", onStateChange);
+      if (player.position >= player.buffer.duration) player.position = 0;
+      const source = context.createBufferSource();
+      source.buffer = player.buffer;
+      source.connect(context.destination);
+      const clip = { player, source, startedAt: context.currentTime };
+      source.addEventListener("ended", () => {
+        if (active !== clip) return;
+        active = undefined;
         source.disconnect();
-        gain.disconnect();
-        if (active === clip) active = undefined;
-        resolve();
-      }
-
-      function onStateChange() {
-        if (context.state !== "running") {
-          source.removeEventListener("ended", finish);
-          finish();
-          source.stop();
-        }
-      }
-
-      source.addEventListener("ended", finish, { once: true });
-      context.addEventListener("statechange", onStateChange);
+        player.position = 0;
+        player.update(false);
+      }, { once: true });
       try {
-        source.start();
+        source.start(0, player.position);
       } catch (error) {
-        source.removeEventListener("ended", finish);
-        reject(error);
-        finish();
+        source.disconnect();
+        throw error;
       }
-    });
-  }
-
-  function updateToggle() {
-    toggle.setAttribute("aria-pressed", String(enabled));
-  }
-
-  updateToggle();
-  toggle.addEventListener("click", () => {
-    enabled = !enabled;
-    updateToggle();
-    try {
-      browser.localStorage.setItem(preference, enabled ? "on" : "off");
+      active = clip;
+      player.update(true);
     } catch {
-      // The in-memory preference still applies.
+      // The text reply stays available when audio cannot start.
     }
-    if (enabled) unlock().catch(() => {});
-    else stop();
-  });
+  }
 
   return {
-    prepare() {
-      if (enabled) unlock().catch(() => {});
-    },
-    autoplay(reply, seed) {
-      if (enabled) return play(reply, seed);
-    },
-    replay(reply, seed) {
-      stop();
-      const requested = playbackId;
-      unlock().then(() => {
-        if (requested === playbackId) return play(reply, seed);
-      }).catch(() => {});
+    createPlayer(reply, seed, update) {
+      const player = { reply, seed, update, position: 0 };
+      return {
+        toggle() {
+          if (active?.player === player) {
+            requestId++;
+            stop(true);
+          } else {
+            return play(player);
+          }
+        },
+        restart() {
+          if (active?.player === player) stop(false);
+          player.position = 0;
+          return play(player);
+        },
+      };
     },
   };
 }
