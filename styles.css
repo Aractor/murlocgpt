@@ -239,4 +239,4 @@ footer { padding-top: 1rem; }
 .playback svg, .replay svg { display: block; width: 100%; height: 100%; }
 .playback:hover, .replay:hover { border-color: var(--edge); background: var(--bubble); }
 .reply-audio { display: flex; gap: .5rem; margin-top: .25rem; }
-.playback .pause-icon, .playback.is-playing .play-icon { display: none; }
+.playback:not(.is-playing) .pause-icon, .playback.is-playing .play-icon { display: none; }
