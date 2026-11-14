@@ -83,17 +83,16 @@ function initChat(document, browser) {
     body.textContent = message;
     row.append(label, body);
     if (voice && seed !== undefined) {
-      const controls = audioTemplate.content.firstElementChild.cloneNode(true);
-      const button = controls.querySelector(".playback");
-      const player = voice.createPlayer(message, seed, (playing) => {
-        button.classList.toggle("is-playing", playing);
-        const label = playing ? "Pause Murloc audio" : "Play Murloc audio";
+      const button = audioTemplate.content.firstElementChild.cloneNode(true);
+      const labels = { play: "Play", pause: "Pause", replay: "Replay" };
+      const player = voice.createPlayer(message, seed, (state) => {
+        button.dataset.state = state;
+        const label = labels[state] + " Murloc audio";
         button.setAttribute("aria-label", label);
         button.title = label;
       });
       button.addEventListener("click", player.toggle);
-      controls.querySelector(".replay").addEventListener("click", player.restart);
-      row.append(controls);
+      row.append(button);
     }
     history.append(row);
     history.scrollTop = history.scrollHeight;

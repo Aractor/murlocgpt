@@ -96,7 +96,7 @@ function createMurlocVoice(browser) {
     player.position = keepPosition
       ? Math.min(player.buffer.duration, player.position + context.currentTime - startedAt)
       : 0;
-    player.update(false);
+    player.update(player.completed && player.position === 0 ? "replay" : "play");
     source.stop();
     source.disconnect();
   }
@@ -126,7 +126,8 @@ function createMurlocVoice(browser) {
         active = undefined;
         source.disconnect();
         player.position = 0;
-        player.update(false);
+        player.completed = true;
+        player.update("replay");
       }, { once: true });
       try {
         source.start(0, player.position);
@@ -135,7 +136,7 @@ function createMurlocVoice(browser) {
         throw error;
       }
       active = clip;
-      player.update(true);
+      player.update("pause");
     } catch {
       // The text reply stays available when audio cannot start.
     }
@@ -143,7 +144,7 @@ function createMurlocVoice(browser) {
 
   return {
     createPlayer(reply, seed, update) {
-      const player = { reply, seed, update, position: 0 };
+      const player = { reply, seed, update, position: 0, completed: false };
       return {
         toggle() {
           if (active?.player === player) {
@@ -152,11 +153,6 @@ function createMurlocVoice(browser) {
           } else {
             return play(player);
           }
-        },
-        restart() {
-          if (active?.player === player) stop(false);
-          player.position = 0;
-          return play(player);
         },
       };
     },
