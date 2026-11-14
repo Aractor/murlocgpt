@@ -36,9 +36,19 @@
         <div id="status" role="status" aria-atomic="true"></div>
         <form id="chat-form">
           <label class="sr-only" for="message">Message MurlocGPT</label>
-          <textarea id="message" rows="2" maxlength="2000" placeholder="Message MurlocGPT…" aria-describedby="keyboard"></textarea>
-          <button id="send" type="submit">Send <span aria-hidden="true">↑</span></button>
+          <textarea id="message" rows="1" maxlength="2000" placeholder="Ask anything" aria-describedby="keyboard"></textarea>
+          <div class="composer-toolbar">
+            <label class="sr-only" for="model">Cosmetic model</label>
+            <select id="model" aria-describedby="model-hint">
+              <option>MurlocGPT-5.5</option>
+              <option>MurlocGPT-5.5 Arcane</option>
+              <option>MurlocGPT-5.5 Whelp</option>
+              <option>MurlocGPT-4o Tidecaller</option>
+            </select>
+            <button id="send" type="submit" aria-label="Send"><span aria-hidden="true">↑</span></button>
+          </div>
         </form>
+        <span id="model-hint" class="sr-only">Model selection is cosmetic.</span>
         <p id="keyboard">Enter to send · Shift + Enter for a new line</p>
         <noscript>Enable JavaScript to send messages.</noscript>
       </div>
