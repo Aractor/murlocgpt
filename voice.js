@@ -129,14 +129,36 @@ function createMurlocVoice(browser, toggle) {
     const gain = context.createGain();
     source.buffer = buffer;
     source.connect(gain).connect(context.destination);
-    const clip = { source, gain };
-    active = clip;
-    source.addEventListener("ended", () => {
-      source.disconnect();
-      gain.disconnect();
-      if (active === clip) active = undefined;
-    }, { once: true });
-    source.start();
+    return new Promise((resolve, reject) => {
+      const clip = { source, gain };
+      active = clip;
+
+      function finish() {
+        context.removeEventListener("statechange", onStateChange);
+        source.disconnect();
+        gain.disconnect();
+        if (active === clip) active = undefined;
+        resolve();
+      }
+
+      function onStateChange() {
+        if (context.state !== "running") {
+          source.removeEventListener("ended", finish);
+          finish();
+          source.stop();
+        }
+      }
+
+      source.addEventListener("ended", finish, { once: true });
+      context.addEventListener("statechange", onStateChange);
+      try {
+        source.start();
+      } catch (error) {
+        source.removeEventListener("ended", finish);
+        reject(error);
+        finish();
+      }
+    });
   }
 
   function updateToggle() {
@@ -161,13 +183,13 @@ function createMurlocVoice(browser, toggle) {
       if (enabled) unlock().catch(() => {});
     },
     autoplay(reply, seed) {
-      if (enabled) play(reply, seed);
+      if (enabled) return play(reply, seed);
     },
     replay(reply, seed) {
       stop();
       const requested = playbackId;
       unlock().then(() => {
-        if (requested === playbackId) play(reply, seed);
+        if (requested === playbackId) return play(reply, seed);
       }).catch(() => {});
     },
   };

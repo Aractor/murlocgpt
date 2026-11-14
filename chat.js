@@ -70,6 +70,13 @@ function initChat(document, browser) {
   if (!voice) sound.hidden = true;
   let pending = false;
 
+  function setPending(value) {
+    pending = value;
+    input.disabled = value;
+    send.disabled = value;
+    for (const button of history.querySelectorAll(".replay")) button.disabled = value;
+  }
+
   function appendMessage(author, message, seed) {
     const row = document.createElement("div");
     row.className = author === "You" ? "message user" : "message";
@@ -80,6 +87,7 @@ function initChat(document, browser) {
     row.append(label, body);
     if (voice && seed !== undefined) {
       const replay = replayTemplate.content.firstElementChild.cloneNode(true);
+      replay.disabled = pending;
       replay.addEventListener("click", () => voice.replay(message, seed));
       row.append(replay);
     }
@@ -96,19 +104,26 @@ function initChat(document, browser) {
     const reply = murlocReply();
     const seed = Math.floor(Math.random() * 0x100000000);
     voice?.prepare();
-    pending = true;
+    const restoreFocus = [input, send].includes(document.activeElement);
+    setPending(true);
     appendMessage("You", message);
     input.value = "";
     status.textContent = "MurlocGPT is thinking...";
-    send.setAttribute("aria-disabled", "true");
-    input.focus({ preventScroll: true });
 
-    browser.setTimeout(() => {
-      status.textContent = "";
+    browser.setTimeout(async () => {
+      status.textContent = "MurlocGPT is replying...";
       appendMessage("MurlocGPT", reply, seed);
-      voice?.autoplay(reply, seed);
-      pending = false;
-      send.removeAttribute("aria-disabled");
+      try {
+        await voice?.autoplay(reply, seed);
+      } catch {
+        // The visible reply remains available if audio playback fails.
+      } finally {
+        status.textContent = "";
+        setPending(false);
+        if (restoreFocus && document.activeElement === document.body) {
+          input.focus({ preventScroll: true });
+        }
+      }
     }, thinkingDelay(reply));
   });
 

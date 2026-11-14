@@ -182,6 +182,7 @@ textarea {
   border-radius: .5rem;
   padding: .45rem .35rem;
 }
+textarea:disabled { opacity: .65; }
 textarea::placeholder { color: var(--muted); opacity: 1; }
 .composer-toolbar {
   display: flex;
@@ -217,7 +218,7 @@ textarea::placeholder { color: var(--muted); opacity: 1; }
   line-height: 1;
   cursor: pointer;
 }
-button[aria-disabled="true"] { opacity: .65; cursor: default; }
+button:disabled { opacity: .65; cursor: default; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 #keyboard, footer { color: var(--muted); text-align: center; font-size: .8rem; }
 #keyboard { margin: .55rem 0 0; }
